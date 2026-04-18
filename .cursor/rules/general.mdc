@@ -1,0 +1,48 @@
+# General Rules - ArchivistMCP
+
+## Project Context
+
+**ArchivistMCP** — MCP-server на Kotlin для индексации документов с ChromaDB.
+
+- **Type**: Model Context Protocol Server (MCP)
+- **Transport**: STDIO + SSE
+- **Purpose**: Семантическая индексация и поиск документов (PDF, TXT, MD)
+
+## Tech Stack
+
+| Component | Version |
+|-----------|---------|
+| Kotlin | 2.2.21 |
+| Ktor | 3.3.3 |
+| MCP Kotlin SDK | 0.11.1 |
+| ChromaDB | embedded |
+| Gradle | 9.4.1 |
+
+## Structure
+
+```
+src/main/kotlin/io/modelcontextprotocol/sample/server/
+├── server.kt       # Main MCP server
+├── main.kt        # Entry point
+├── chroma/        # ChromaDB client
+├── documents/      # Document parsing
+├── indexing/      # Indexing logic
+└── tools/         # MCP tools
+```
+
+## Commands
+
+```bash
+./gradlew build      # Build project
+./gradlew run       # Run server
+./gradlew test     # Run tests
+./gradlew shadowJar # Create uber-jar
+```
+
+## Rules
+
+1. Всегда используй Gradle для сборки
+2. Используй sealed class для result types
+3. Применяй suspend функции с Dispatchers.IO
+4. Используй snake_case для MCP инструментов
+5. ChromaDB в embedded mode, хранилище в `./data/chromadb`

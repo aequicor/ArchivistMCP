@@ -1,0 +1,66 @@
+# Kotlin Rules - ArchivistMCP
+
+## Result Types
+
+```kotlin
+// Правильно - sealed class для Result
+sealed class IndexResult {
+    data class Success(val documentId: String) : IndexResult()
+    data class Error(val message: String) : IndexResult()
+}
+
+// Избегай
+fun indexDocument(path: String): Map<String, Any>
+```
+
+## Coroutines
+
+```kotlin
+// Правильно - suspend функции с корректным dispatcher
+suspend fun indexDocument(path: String): IndexResult =
+    withContext(Dispatchers.IO) { ... }
+
+// Избегай - blocking вызовы в корутинах
+fun indexDocument(path: String): IndexResult { ... }
+```
+
+## Null Safety
+
+```kotlin
+// Используй safe calls и elvis операторы
+val content = document.content ?: return IndexResult.Error("Empty document")
+
+// Избегай
+val content = document.content!! // NPE risk
+```
+
+## Naming Conventions
+
+- **Functions**: camelCase (`indexDocument`, `queryDocuments`)
+- **Classes**: PascalCase (`IndexResult`, `ChromaClient`)
+- **MCP Tools**: snake_case (`index_document`, `query_documents`)
+- **Constants**: UPPER_SNAKE_CASE
+
+## File Organization
+
+```
+src/main/kotlin/io/modelcontextprotocol/sample/server/
+├── server.kt                    # Server configuration
+├── main.kt                      # Entry point, main() functions
+├── chroma/
+│   ├── ChromaClient.kt         # ChromaDB client wrapper
+│   └── ChromaCollection.kt     # Collection operations
+├── documents/
+│   ├── DocumentParser.kt       # Base interface
+│   ├── PdfParser.kt           # PDF parsing
+│   └── TextParser.kt          # Plain text parsing
+└── tools/
+    ├── IndexDocumentTool.kt  # index_document tool
+    └── QueryDocumentsTool.kt  # query_documents tool
+```
+
+## Dependencies Management
+
+- Все зависимости в `gradle/libs.versions.toml`
+- Обновления через версионные ссылки
+- Используй Kotlin serialization для JSON

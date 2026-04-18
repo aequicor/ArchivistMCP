@@ -1,0 +1,104 @@
+# MCP Tools Rules - ArchivistMCP
+
+## Tool Definition
+
+```kotlin
+server.addTool(
+    name = "index_document",
+    description = "Индексирует документ для семантического поиска"
+) { request ->
+    // request - типизированный data class
+}
+```
+
+## Tool Naming
+
+- Используй `snake_case` для имён инструментов
+- Примеры: `index_document`, `query_documents`, `list_documents`, `delete_document`
+
+## Result Types
+
+```kotlin
+// Используй CallToolResult с TextContent
+CallToolResult(
+    content = listOf(TextContent("Success: document indexed"))
+)
+
+// JSON структура для сложных результатов
+CallToolResult(
+    content = listOf(TextContent(
+        """{"documentId": "abc123", "chunks": 5}"""
+    ))
+)
+```
+
+## Arguments
+
+Типизируй аргументы через data classes:
+
+```kotlin
+data class IndexDocumentRequest(
+    val path: String,
+    val collection: String = "documents"
+)
+
+server.addTool<IndexDocumentRequest, CallToolResult>(
+    name = "index_document",
+    description = "Индексирует документ"
+) { request ->
+    // request.path, request.collection доступны
+}
+```
+
+## Resources
+
+```kotlin
+server.addResource(
+    uri = "file://{path}",
+    name = "Document",
+    description = "Доступ к документу",
+    mimeType = "text/plain"
+) { request ->
+    ReadResourceResult(
+        contents = listOf(TextResourceContents(content, request.uri, "text/plain"))
+    )
+}
+```
+
+## Prompts
+
+```kotlin
+server.addPrompt(
+    name = "document_search",
+    description = "Поиск документов по запросу",
+    arguments = listOf(
+        PromptArgument(name = "query", description = "Поисковый запрос", required = true)
+    )
+) { request ->
+    GetPromptResult(
+        messages = listOf(
+            PromptMessage(
+                role = Role.User,
+                content = TextContent("Найди документы: ${request.arguments?.get("query")}")
+            )
+        )
+    )
+}
+```
+
+## Transport
+
+- **STDIO**: `runMcpServerUsingStdio()` — для локальных агентов
+- **SSE**: `runSseMcpServerUsingKtorPlugin(port)` — для HTTP подключения
+- Endpoint: `/sse` + `/message`
+
+## Server Capabilities
+
+```kotlin
+ServerOptions(
+    capabilities = ServerCapabilities(
+        prompts = ServerCapabilities.Prompts(listChanged = true),
+        resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
+        tools = ServerCapabilities.Tools(listChanged = true),
+    ),
+)
