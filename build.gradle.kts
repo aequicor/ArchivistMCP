@@ -5,11 +5,11 @@ plugins {
     application
 }
 
-group = "org.example"
+group = "io.aeqiocor.archivistmcp"
 version = "0.1.0"
 
 application {
-    mainClass.set("io.modelcontextprotocol.sample.server.MainKt")
+    mainClass.set("io.aeqiocor.archivistmcp.MainKt")
 }
 
 dependencies {

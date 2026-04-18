@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  archivist-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: archivist-mcp
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS=-Xmx512m
+      - DOCS_DIR=/app/docs
+    volumes:
+      - ./docs:/app/docs:ro
+    restart: unless-stopped
+
+volumes:
+  archivist-data:

@@ -1,19 +1,19 @@
 # Cursor Rules - ArchivistMCP
 
-Структура правил для Cursor AI.
+Rules structure for Cursor AI.
 
-## Файлы
+## Files
 
-- **[general.mdc](general.mdc)** — Общие правила проекта, tech stack, структура
-- **[kotlin.mdc](kotlin.mdc)** — Kotlin конвенции, coroutines, null safety
-- **[mcp-tools.mdc](mcp-tools.mdc)** — MCP инструменты, tool definition, resources
+- **[general.mdc](general.mdc)** — Project rules, tech stack, structure
+- **[kotlin.mdc](kotlin.mdc)** — Kotlin conventions, coroutines, null safety
+- **[mcp-tools.mdc](mcp-tools.mdc)** — MCP tools, tool definition, resources
 
-## Использование
+## Usage
 
-Все правила автоматически загружаются Cursor при работе с проектом.
+All rules are automatically loaded by Cursor when working with the project.
 
-## Приоритеты
+## Priorities
 
-1. `general.mdc` — применяется ко всему проекту
-2. `kotlin.mdc` — для .kt файлов
-3. `mcp-tools.mdc` — для MCP инструментов
+1. `general.mdc` — applies to entire project
+2. `kotlin.mdc` — for .kt files
+3. `mcp-tools.mdc` — for MCP tools

@@ -1,60 +1,60 @@
 # Kotlin MCP Skill
 
-> **Версия**: 1.0
-> **Статус**: Готов к использованию
+> **Version**: 1.0
+> **Status**: Ready to use
 
-Навык для разработки MCP-сервера на Kotlin с ChromaDB для индексации документов.
+Skill for developing MCP server in Kotlin with ChromaDB for document indexing.
 
 ## Quick Start
 
 ```bash
-./gradlew build    # Сборка проекта
-./gradlew run      # Запуск сервера
-./gradlew test     # Запуск тестов
+./gradlew build    # Build project
+./gradlew run      # Run server
+./gradlew test     # Run tests
 ```
 
-## Навыки
+## Skills
 
 ### kotlin-mcp-core
 
-Типичные операции с MCP SDK.
+Typical MCP SDK operations.
 
-- Создание инструментов через `server.addTool()`
-- Добавление ресурсов через `server.addResource()`
-- Генерация промптов через `server.addPrompt()`
+- Creating tools via `server.addTool()`
+- Adding resources via `server.addResource()`
+- Generating prompts via `server.addPrompt()`
 
 ### kotlin-chroma
 
-Операции с ChromaDB.
+ChromaDB operations.
 
-- Подключение к embedded ChromaDB
-- Создание коллекций
-- Добавление документов с эмбеддингами
-- Семантический поиск
+- Connecting to embedded ChromaDB
+- Creating collections
+- Adding documents with embeddings
+- Semantic search
 
 ### kotlin-ktor
 
-Ktor HTTP сервер.
+Ktor HTTP server.
 
-- STDIO транспорт
-- SSE транспорт
-- CORS настройка
+- STDIO transport
+- SSE transport
+- CORS configuration
 
-## Архитектура
+## Architecture
 
 ```
 src/main/kotlin/io/modelcontextprotocol/sample/server/
-├── server.kt         # Конфигурация MCP сервера
-├── main.kt           # Точка входа
-├── chroma/          # ChromaDB клиент
+├── server.kt         # MCP server configuration
+├── main.kt           # Entry point
+├── chroma/          # ChromaDB client
 │   └── ChromaClient.kt
-├── documents/        # Парсинг документов
+├── documents/        # Document parsing
 │   ├── DocumentParser.kt
 │   ├── PdfParser.kt
 │   └── TextParser.kt
-├── indexing/        # Логика индексации
+├── indexing/        # Indexing logic
 │   └── DocumentIndexer.kt
-└── tools/            # MCP инструменты
+└── tools/            # MCP tools
     ├── IndexDocumentTool.kt
     ├── QueryDocumentsTool.kt
     └── ListDocumentsTool.kt
@@ -63,19 +63,19 @@ src/main/kotlin/io/modelcontextprotocol/sample/server/
 ## Agent Commands
 
 ```
-@gen-tool [name]    Генерирует MCP инструмент
-@gen-parser [type]  Генерирует парсер (pdf, txt, md)
-@index              Индексирует документ
-@query              Выполняет семантический поиск
+@gen-tool [name]    Generates MCP tool
+@gen-parser [type]  Generates parser (pdf, txt, md)
+@index              Indexes document
+@query              Performs semantic search
 ```
 
 ## Best Practices
 
-1. **Результаты** — используй sealed class для типизации
-2. **Coroutines** — suspend функции с Dispatchers.IO
-3. **Null Safety** — safe calls и elvis операторы
+1. **Results** — use sealed class for typing
+2. **Coroutines** — suspend functions with Dispatchers.IO
+3. **Null Safety** — safe calls and elvis operators
 4. **Tool Naming** — snake_case (index_document, query_documents)
-5. **Description** — всегда добавляй описание к инструментам
+5. **Description** — always add description to tools
 
 ## Links
 

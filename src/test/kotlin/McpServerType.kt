@@ -1,6 +1,6 @@
 import io.ktor.server.engine.EmbeddedServer
-import io.modelcontextprotocol.sample.server.runSseMcpServerUsingKtorPlugin
-import io.modelcontextprotocol.sample.server.runSseMcpServerWithPlainConfiguration
+import io.aeqiocor.archivistmcp.runSseMcpServerUsingKtorPlugin
+import io.aeqiocor.archivistmcp.runSseMcpServerWithPlainConfiguration
 
 enum class McpServerType(
     val sseEndpoint: String,

@@ -3,34 +3,34 @@
 ## Result Types
 
 ```kotlin
-// Правильно - sealed class для Result
+// Correct - sealed class for Result
 sealed class IndexResult {
     data class Success(val documentId: String) : IndexResult()
     data class Error(val message: String) : IndexResult()
 }
 
-// Избегай
+// Avoid
 fun indexDocument(path: String): Map<String, Any>
 ```
 
 ## Coroutines
 
 ```kotlin
-// Правильно - suspend функции с корректным dispatcher
+// Correct - suspend functions with proper dispatcher
 suspend fun indexDocument(path: String): IndexResult =
     withContext(Dispatchers.IO) { ... }
 
-// Избегай - blocking вызовы в корутинах
+// Avoid - blocking calls in coroutines
 fun indexDocument(path: String): IndexResult { ... }
 ```
 
 ## Null Safety
 
 ```kotlin
-// Используй safe calls и elvis операторы
+// Use safe calls and elvis operators
 val content = document.content ?: return IndexResult.Error("Empty document")
 
-// Избегай
+// Avoid
 val content = document.content!! // NPE risk
 ```
 
@@ -61,6 +61,6 @@ src/main/kotlin/io/modelcontextprotocol/sample/server/
 
 ## Dependencies Management
 
-- Все зависимости в `gradle/libs.versions.toml`
-- Обновления через версионные ссылки
-- Используй Kotlin serialization для JSON
+- All dependencies in `gradle/libs.versions.toml`
+- Updates via version references
+- Use Kotlin serialization for JSON

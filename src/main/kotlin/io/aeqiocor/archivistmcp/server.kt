@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.sample.server
+package io.aeqiocor.archivistmcp
 
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -36,11 +36,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
+import java.io.File
+
+var docsDirectory: String = System.getenv("DOCS_DIR") ?: "./docs"
 
 fun configureServer(): Server {
     val server = Server(
         Implementation(
-            name = "mcp-kotlin test server",
+            name = "ArchivistMCP",
             version = "0.1.0",
         ),
         ServerOptions(
@@ -76,7 +79,83 @@ fun configureServer(): Server {
         )
     }
 
-    // Add a tool
+    server.addTool(
+        name = "list_documents",
+        description = "List all markdown documents in the documents directory",
+    ) { _ ->
+        val dir = File(docsDirectory)
+        if (!dir.exists() || !dir.isDirectory) {
+            CallToolResult(
+                content = listOf(TextContent("""{"error": "Directory not found: $docsDirectory"}""")),
+                isError = true,
+            )
+        } else {
+            val files = dir.walkTopDown()
+                .filter { it.isFile && (it.extension == "md" || it.extension == "markdown") }
+                .map { it.relativeTo(dir).path }
+                .toList()
+            CallToolResult(
+                content = listOf(TextContent("""{"directory": "$docsDirectory", "files": ${files.map { "\"$it\"" }}}""")),
+            )
+        }
+    }
+
+    server.addTool(
+        name = "read_document",
+        description = "Read a specific document by filename",
+    ) { request ->
+        val filename = request.arguments?.get("filename") as? String
+        if (filename == null) {
+            CallToolResult(
+                content = listOf(TextContent("""{"error": "filename is required"}""")),
+                isError = true,
+            )
+        } else {
+            val file = File(docsDirectory, filename)
+            if (!file.exists()) {
+                CallToolResult(
+                    content = listOf(TextContent("""{"error": "File not found: $filename"}""")),
+                    isError = true,
+                )
+            } else {
+                val content = file.readText()
+                CallToolResult(
+                    content = listOf(TextContent("""{"filename": "$filename", "content": ${content.jsonEscape()}}""")),
+                )
+            }
+        }
+    }
+
+    server.addTool(
+        name = "search_documents",
+        description = "Search for text in all markdown documents",
+    ) { request ->
+        val query = request.arguments?.get("query") as? String
+        if (query == null) {
+            CallToolResult(
+                content = listOf(TextContent("""{"error": "query is required"}""")),
+                isError = true,
+            )
+        } else {
+            val dir = File(docsDirectory)
+            if (!dir.exists() || !dir.isDirectory) {
+                CallToolResult(
+                    content = listOf(TextContent("""{"error": "Directory not found: $docsDirectory"}""")),
+                    isError = true,
+                )
+            } else {
+                val results = dir.walkTopDown()
+                    .filter { it.isFile && (it.extension == "md" || it.extension == "markdown") }
+                    .filter { it.readText().contains(query, ignoreCase = true) }
+                    .map { it.relativeTo(dir).path }
+                    .toList()
+                CallToolResult(
+                    content = listOf(TextContent("""{"query": "$query", "matches": ${results.map { "\"$it\"" }}}""")),
+                )
+            }
+        }
+    }
+
     server.addTool(
         name = "kotlin-sdk-tool",
         description = "A test tool",
@@ -86,7 +165,6 @@ fun configureServer(): Server {
         )
     }
 
-    // Add a resource
     server.addResource(
         uri = "https://search.com/",
         name = "Web Search",
@@ -101,6 +179,15 @@ fun configureServer(): Server {
     }
 
     return server
+}
+
+private fun String.jsonEscape(): String {
+    return this
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
 }
 
 fun runSseMcpServerWithPlainConfiguration(port: Int, wait: Boolean = true): EmbeddedServer<*, *> {

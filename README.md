@@ -1,6 +1,6 @@
 # ArchivistMCP
 
-MCP-server на Kotlin для индексации документов с ChromaDB.
+MCP-server на Kotlin для индексации документов.
 
 ## Технологии
 

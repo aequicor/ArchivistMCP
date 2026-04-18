@@ -5,26 +5,26 @@
 ```kotlin
 server.addTool(
     name = "index_document",
-    description = "Индексирует документ для семантического поиска"
+    description = "Indexes a document for semantic search"
 ) { request ->
-    // request - типизированный data class
+    // request is a typed data class
 }
 ```
 
 ## Tool Naming
 
-- Используй `snake_case` для имён инструментов
-- Примеры: `index_document`, `query_documents`, `list_documents`, `delete_document`
+- Use `snake_case` for tool names
+- Examples: `index_document`, `query_documents`, `list_documents`, `delete_document`
 
 ## Result Types
 
 ```kotlin
-// Используй CallToolResult с TextContent
+// Use CallToolResult with TextContent
 CallToolResult(
     content = listOf(TextContent("Success: document indexed"))
 )
 
-// JSON структура для сложных результатов
+// JSON structure for complex results
 CallToolResult(
     content = listOf(TextContent(
         """{"documentId": "abc123", "chunks": 5}"""
@@ -34,7 +34,7 @@ CallToolResult(
 
 ## Arguments
 
-Типизируй аргументы через data classes:
+Type arguments via data classes:
 
 ```kotlin
 data class IndexDocumentRequest(
@@ -44,9 +44,9 @@ data class IndexDocumentRequest(
 
 server.addTool<IndexDocumentRequest, CallToolResult>(
     name = "index_document",
-    description = "Индексирует документ"
+    description = "Indexes a document"
 ) { request ->
-    // request.path, request.collection доступны
+    // request.path, request.collection available
 }
 ```
 
@@ -56,7 +56,7 @@ server.addTool<IndexDocumentRequest, CallToolResult>(
 server.addResource(
     uri = "file://{path}",
     name = "Document",
-    description = "Доступ к документу",
+    description = "Access to document",
     mimeType = "text/plain"
 ) { request ->
     ReadResourceResult(
@@ -70,16 +70,16 @@ server.addResource(
 ```kotlin
 server.addPrompt(
     name = "document_search",
-    description = "Поиск документов по запросу",
+    description = "Search documents by query",
     arguments = listOf(
-        PromptArgument(name = "query", description = "Поисковый запрос", required = true)
+        PromptArgument(name = "query", description = "Search query", required = true)
     )
 ) { request ->
     GetPromptResult(
         messages = listOf(
             PromptMessage(
                 role = Role.User,
-                content = TextContent("Найди документы: ${request.arguments?.get("query")}")
+                content = TextContent("Find documents: ${request.arguments?.get("query")}")
             )
         )
     )
@@ -88,8 +88,8 @@ server.addPrompt(
 
 ## Transport
 
-- **STDIO**: `runMcpServerUsingStdio()` — для локальных агентов
-- **SSE**: `runSseMcpServerUsingKtorPlugin(port)` — для HTTP подключения
+- **STDIO**: `runMcpServerUsingStdio()` — for local agents
+- **SSE**: `runSseMcpServerUsingKtorPlugin(port)` — for HTTP connections
 - Endpoint: `/sse` + `/message`
 
 ## Server Capabilities
