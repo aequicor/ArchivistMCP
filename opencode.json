@@ -3,10 +3,17 @@
   "instructions": [
     "AGENTS.md"
   ],
-  "mcp_servers": {
-    "archivist": {
-      "url": "http://localhost:8080/sse",
-      "description": "Document indexing MCP server (Docker)"
+  "mcp": {
+    "archivist-mcp": {
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--interactive",
+        "--volume",  "C:/Users/kruz18/IdeaProjects/ArchivistMCP:/app/workspace",
+        "archivist-mcp:latest"
+      ]
     }
   },
   "agent": {

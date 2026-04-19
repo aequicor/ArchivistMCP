@@ -18,6 +18,8 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.cors)
     implementation(libs.slf4j.simple)
+    implementation(libs.langchain4j)
+    implementation(libs.langchain4j.embeddings)
 
     testImplementation(libs.mcp.kotlin.client)
     testImplementation(libs.ktor.client.cio)

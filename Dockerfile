@@ -1,13 +1,18 @@
-FROM eclipse-temurin:17-jre-alpine
+# ─── Stage 1: Build ───────────────────────────────────────────────────────────
+FROM gradle:9.4.1-jdk17-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+COPY build.gradle.kts settings.gradle.kts ./
+COPY gradle/ gradle/
+RUN gradle dependencies --no-daemon -Dorg.gradle.java.installations.auto-download=false || true
 
-COPY build/libs/ArchivistMCP-0.1.0-all.jar app.jar
+COPY src/ src/
+RUN gradle shadowJar --no-daemon -Dorg.gradle.java.installations.auto-download=false
 
-ENV JAVA_OPTS="-Xmx512m"
-
-EXPOSE 8080
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --sse-server-ktor 8080"]
+# ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+COPY --from=builder /app/build/libs/*-all.jar app.jar
+RUN java -cp app.jar dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel || true
+ENTRYPOINT ["java", "-jar", "app.jar", "--stdio", "8080", "--docs-dir=/app/workspace/docs"]

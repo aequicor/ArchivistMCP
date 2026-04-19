@@ -1,1 +1,1 @@
-Напиши Kotlin - the best
+Проект использует Kotlin Multiplatfrom

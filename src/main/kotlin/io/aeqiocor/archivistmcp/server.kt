@@ -1,46 +1,40 @@
 package io.aeqiocor.archivistmcp
 
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
-import io.ktor.server.cio.CIO
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.response.respond
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
-import io.ktor.server.sse.SSE
-import io.ktor.server.sse.sse
-import io.ktor.util.collections.ConcurrentMap
-import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
-import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
-import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
-import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
-import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
-import io.modelcontextprotocol.kotlin.sdk.types.Role
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
-import kotlinx.coroutines.Job
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.cio.*
+import io.ktor.server.engine.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.sse.*
+import io.ktor.util.collections.*
+import io.modelcontextprotocol.kotlin.sdk.server.*
+import io.modelcontextprotocol.kotlin.sdk.types.*
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import java.io.File
+import java.io.InputStream
+import kotlin.system.exitProcess
 
-var docsDirectory: String = System.getenv("DOCS_DIR") ?: "./docs"
+var docsDirectory: String = System.getenv("DOCS_DIR") ?: "/docs"
+var workspaceDirectory: String = System.getenv("WORKSPACE_DIR") ?: System.getProperty("user.dir") ?: "."
 
 fun configureServer(): Server {
+    try {
+        Indexer.indexDocuments(docsDirectory)
+    } catch (e: Throwable) {
+        e.printStackTrace()
+    }
+
     val server = Server(
         Implementation(
             name = "ArchivistMCP",
@@ -80,6 +74,27 @@ fun configureServer(): Server {
     }
 
     server.addTool(
+        name = "list_workspace_files",
+        description = "List all files in the workspace directory",
+    ) { _ ->
+        val dir = File(workspaceDirectory)
+        if (!dir.exists() || !dir.isDirectory) {
+            CallToolResult(
+                content = listOf(TextContent("""{"error": "Directory not found: $workspaceDirectory"}""")),
+                isError = true,
+            )
+        } else {
+            val files = dir.walkTopDown()
+                .filter { it.isFile }
+                .map { it.relativeTo(dir).path }
+                .toList()
+            CallToolResult(
+                content = listOf(TextContent("""{"directory": "$workspaceDirectory", "files": ${files.map { "\"$it\"" }}}""")),
+            )
+        }
+    }
+
+    server.addTool(
         name = "list_documents",
         description = "List all markdown documents in the documents directory",
     ) { _ ->
@@ -104,7 +119,7 @@ fun configureServer(): Server {
         name = "read_document",
         description = "Read a specific document by filename",
     ) { request ->
-        val filename = request.arguments?.get("filename") as? String
+        val filename = request.arguments?.get("filename")?.jsonPrimitive?.contentOrNull
         if (filename == null) {
             CallToolResult(
                 content = listOf(TextContent("""{"error": "filename is required"}""")),
@@ -127,32 +142,32 @@ fun configureServer(): Server {
     }
 
     server.addTool(
-        name = "search_documents",
-        description = "Search for text in all markdown documents",
+        name = "semantic_search",
+        description = "Search documents using semantic similarity (vector search). Better than keyword search for natural language queries.",
+        inputSchema = ToolSchema(
+            properties = buildJsonObject {
+                putJsonObject("query") {
+                    put("type", "string")
+                    put("description", "Natural language search query")
+                }
+            },
+            required = listOf("query")
+        )
     ) { request ->
-        val query = request.arguments?.get("query") as? String
+        val query = request.arguments?.get("query")?.jsonPrimitive?.contentOrNull
         if (query == null) {
             CallToolResult(
                 content = listOf(TextContent("""{"error": "query is required"}""")),
                 isError = true,
             )
         } else {
-            val dir = File(docsDirectory)
-            if (!dir.exists() || !dir.isDirectory) {
-                CallToolResult(
-                    content = listOf(TextContent("""{"error": "Directory not found: $docsDirectory"}""")),
-                    isError = true,
-                )
-            } else {
-                val results = dir.walkTopDown()
-                    .filter { it.isFile && (it.extension == "md" || it.extension == "markdown") }
-                    .filter { it.readText().contains(query, ignoreCase = true) }
-                    .map { it.relativeTo(dir).path }
-                    .toList()
-                CallToolResult(
-                    content = listOf(TextContent("""{"query": "$query", "matches": ${results.map { "\"$it\"" }}}""")),
-                )
+            val results = Indexer.search(query)
+            val json = results.joinToString(", ", "[", "]") { (filename, score) ->
+                """{"filename": "$filename", "score": ${"%.3f".format(score)}}"""
             }
+            CallToolResult(
+                content = listOf(TextContent("""{"query": "$query", "results": $json}""")),
+            )
         }
     }
 
@@ -278,19 +293,37 @@ private fun Application.installCors() {
  * This mode is useful for process-based communication where the server
  * communicates via stdin/stdout with a parent process or client.
  */
+class EofDetectingInputStream(
+    private val delegate: InputStream,
+    private val onEof: () -> Unit,
+) : InputStream() {
+    override fun read(): Int {
+        val b = delegate.read()
+        if (b == -1) onEof()
+        return b
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        val n = delegate.read(b, off, len)
+        if (n == -1) onEof()
+        return n
+    }
+}
+
 fun runMcpServerUsingStdio() {
     val server = configureServer()
+
+    val wrappedStdin = EofDetectingInputStream(System.`in`) {
+        exitProcess(0)
+    }
+
     val transport = StdioServerTransport(
-        inputStream = System.`in`.asSource().buffered(),
+        inputStream = wrappedStdin.asSource().buffered(),
         outputStream = System.out.asSink().buffered(),
     )
 
     runBlocking {
         server.createSession(transport)
-        val done = Job()
-        server.onClose {
-            done.complete()
-        }
-        done.join()
+        awaitCancellation()
     }
 }

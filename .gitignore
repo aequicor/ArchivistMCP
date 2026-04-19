@@ -31,3 +31,4 @@ Thumbs.db
 
 # ChromaDB
 data/chromadb/
+/docs/index/embeddings.json

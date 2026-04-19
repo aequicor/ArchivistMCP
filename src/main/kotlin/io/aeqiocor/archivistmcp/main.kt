@@ -4,15 +4,14 @@ import kotlinx.coroutines.runBlocking
 
 fun main(vararg args: String): Unit = runBlocking {
     val command = args.firstOrNull() ?: "--stdio"
-    val port = args.getOrNull(1)?.toIntOrNull() ?: 3001
-    val docsDir = args.filter { it.startsWith("--docs-dir=") }
-        .firstOrNull()
+    val port = args.getOrNull(1)?.toIntOrNull() ?: throw IllegalArgumentException()
+    val docsDir = args.firstOrNull { it.startsWith("--docs-dir=") }
         ?.substringAfter("=")
-        ?: System.getenv("DOCS_DIR")
-        ?: "./docs"
+        ?: throw IllegalArgumentException("Docs dir required")
 
-    System.setProperty("docs.dir", docsDir)
     docsDirectory = docsDir
+
+
 
     when (command) {
         "--stdio" -> runMcpServerUsingStdio()
