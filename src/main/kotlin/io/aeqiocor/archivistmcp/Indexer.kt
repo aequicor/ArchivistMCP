@@ -10,10 +10,9 @@ import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore
 import java.io.File
 
-object Indexer {
+class Indexer(private val config: AppConfig) {
     private val embeddingModel = AllMiniLmL6V2EmbeddingModel()
-    private val indexPath = System.getenv("INDEX_PATH") ?: ("$docsDirectory/index/embeddings.json")
-    val embeddingStore: InMemoryEmbeddingStore<TextSegment> = loadOrCreate()
+    private val embeddingStore: InMemoryEmbeddingStore<TextSegment> = loadOrCreate()
 
     private val ingestor = EmbeddingStoreIngestor.builder()
         .documentSplitter(DocumentSplitters.recursive(512, 64))
@@ -22,18 +21,18 @@ object Indexer {
         .build()
 
     private fun loadOrCreate(): InMemoryEmbeddingStore<TextSegment> {
-        val file = File(indexPath)
+        val file = File(config.indexPath)
         return if (file.exists()) {
-            println("Loading existing index from $indexPath")
+            println("Loading existing index from ${config.indexPath}")
             InMemoryEmbeddingStore.fromFile(file.toPath())
         } else {
-            println("Creating new index at $indexPath")
+            println("Creating new index at ${config.indexPath}")
             InMemoryEmbeddingStore()
         }
     }
 
-    fun indexDocuments(docsDir: String) {
-        val dir = File(docsDir)
+    fun indexDocuments() {
+        val dir = File(config.docsDirectory)
         if (!dir.exists() || !dir.isDirectory) return
 
         val files = dir.walkTopDown()
@@ -44,17 +43,16 @@ object Indexer {
         files.forEach { file ->
             val doc = Document.from(
                 file.readText(),
-                Metadata.from("filename", file.relativeTo(dir).path)
+                Metadata.from("filename", file.relativeTo(dir).path),
             )
             ingestor.ingest(doc)
             println("Indexed: ${file.name}")
         }
 
-        // Сохраняем на диск после индексации
-        val indexFile = File(indexPath)
+        val indexFile = File(config.indexPath)
         indexFile.parentFile?.mkdirs()
         embeddingStore.serializeToFile(indexFile.toPath())
-        println("Index saved to $indexPath")
+        println("Index saved to ${config.indexPath}")
     }
 
     fun search(query: String, maxResults: Int = 5): List<Pair<String, Double>> {
