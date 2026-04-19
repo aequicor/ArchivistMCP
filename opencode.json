@@ -3,6 +3,12 @@
   "instructions": [
     "AGENTS.md"
   ],
+  "mcp_servers": {
+    "archivist": {
+      "url": "http://localhost:8080/sse",
+      "description": "Document indexing MCP server (Docker)"
+    }
+  },
   "agent": {
     "kotlin-developer": {
       "description": "Kotlin developer for MCP document indexing server",
