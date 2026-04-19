@@ -1,7 +1,9 @@
 package io.aeqiocor.archivistmcp
 
+import io.aeqiocor.archivistmcp.tool.AddDocumentTool
 import io.aeqiocor.archivistmcp.tool.McpTool
 import io.aeqiocor.archivistmcp.tool.SemanticSearchTool
+import io.aeqiocor.archivistmcp.tool.SmartSearchTool
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
@@ -62,6 +64,8 @@ fun configureServer(config: AppConfig, indexer: Indexer): Server {
 
     val tools: List<McpTool> = listOf(
         SemanticSearchTool(indexer),
+        AddDocumentTool(indexer),
+        SmartSearchTool(indexer),
     )
     tools.forEach { it.register(server) }
 

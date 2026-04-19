@@ -55,6 +55,23 @@ class Indexer(private val config: AppConfig) {
         println("Index saved to ${config.indexPath}")
     }
 
+    fun addDocument(filename: String, content: String) {
+        val file = File(config.docsDirectory, filename)
+        file.parentFile?.mkdirs()
+        file.writeText(content)
+
+        val doc = Document.from(
+            content,
+            Metadata.from("filename", file.relativeTo(File(config.docsDirectory)).path),
+        )
+        ingestor.ingest(doc)
+
+        val indexFile = File(config.indexPath)
+        indexFile.parentFile?.mkdirs()
+        embeddingStore.serializeToFile(indexFile.toPath())
+        println("Document added and indexed: $filename")
+    }
+
     fun search(query: String, maxResults: Int = 5): List<Pair<String, Double>> {
         val queryEmbedding = embeddingModel.embed(query).content()
         val request = EmbeddingSearchRequest.builder()

@@ -1,5 +1,6 @@
 package io.aeqiocor.archivistmcp
 
+import java.io.File
 import kotlinx.coroutines.runBlocking
 
 fun main(vararg args: String): Unit = runBlocking {
@@ -14,6 +15,18 @@ fun main(vararg args: String): Unit = runBlocking {
         workspaceDirectory = System.getenv("WORKSPACE_DIR") ?: System.getProperty("user.dir") ?: ".",
         indexPath = System.getenv("INDEX_PATH") ?: "$docsDir/index/embeddings.json",
     )
+
+    val templateDest = File(docsDir, "doc-template.md")
+    if (!templateDest.exists()) {
+        val templateContent = object {}.javaClass.classLoader
+            .getResourceAsStream("doc-template.md")
+            ?.bufferedReader()?.readText()
+        if (templateContent != null) {
+            templateDest.parentFile?.mkdirs()
+            templateDest.writeText(templateContent)
+            println("Copied doc-template.md to $docsDir")
+        }
+    }
 
     val indexer = Indexer(config)
     try {

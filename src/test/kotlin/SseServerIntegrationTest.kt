@@ -24,8 +24,8 @@ abstract class SseServerIntegrationTestBase {
         assertNull(listToolsResult.meta)
 
         val tools = listToolsResult.tools
-        assertEquals(actual = tools.size, expected = 1)
-        assertEquals(expected = listOf("kotlin-sdk-tool"), actual = tools.map { it.name })
+        assertEquals(actual = tools.size, expected = 3)
+        assertEquals(expected = listOf("semantic_search", "add_document", "smart_search"), actual = tools.map { it.name })
     }
 
     @Test
@@ -71,10 +71,10 @@ abstract class SseServerIntegrationTestBase {
     }
 
     @Test
-    fun `should call tool`(): Unit = runBlocking {
+    fun `should call tool with missing query`(): Unit = runBlocking {
         // when
         val toolResult = client.callTool(
-            name = "kotlin-sdk-tool",
+            name = "semantic_search",
             arguments = emptyMap(),
         )
 
@@ -83,9 +83,7 @@ abstract class SseServerIntegrationTestBase {
         assertNull(toolResult.meta)
         val content = toolResult.content.single()
         assertIs<TextContent>(content, "Tool result should be a text content")
-
-        assertEquals(expected = "Hello, world!", actual = content.text)
-        assertEquals(expected = "text", actual = "${content.type}".lowercase())
+        assertTrue(toolResult.isError == true)
     }
 }
 
