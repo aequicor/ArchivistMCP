@@ -10,18 +10,22 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import java.io.File
 
-class SmartSearchTool(private val indexer: Indexer) : McpTool {
+class SmartSearchTool(
+    private val indexer: Indexer,
+    private val templatesDir: String,
+) : McpTool {
     private val template: String by lazy {
-        SmartSearchTool::class.java.classLoader
-            .getResourceAsStream("doc-template.md")
-            ?.bufferedReader()?.readText() ?: ""
+        val file = File(templatesDir, "doc-template.md")
+        if (file.exists()) file.readText() else ""
     }
 
     override fun register(server: Server) {
         server.addTool(
             name = "smart_search",
-            description = "Search documents by semantic similarity. If nothing is found, returns a documentation template and instructs to call add_document to create and index a new document.",
+            description = "Search documents by semantic similarity across all modules. " +
+                "If nothing is found, returns a documentation template and instructs to call add_document.",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("query") {
@@ -33,31 +37,35 @@ class SmartSearchTool(private val indexer: Indexer) : McpTool {
             ),
         ) { request ->
             val query = request.arguments?.get("query")?.jsonPrimitive?.contentOrNull
-            if (query == null) {
+            if (query.isNullOrBlank()) {
                 CallToolResult(
                     content = listOf(TextContent("""{"error": "query is required"}""")),
                     isError = true,
                 )
             } else {
-                val results = indexer.search(query)
+                val results = indexer.search(module = null, query = query)
                 if (results.isNotEmpty()) {
-                    val json = results.joinToString(", ", "[", "]") { (filename, score) ->
-                        """{"filename": "$filename", "score": ${"%.3f".format(score)}}"""
+                    val json = results.joinToString(", ", "[", "]") { r ->
+                        """{"module": "${r.module.jsonEscape()}", "filename": "${r.filename.jsonEscape()}", "path": "${r.path.jsonEscape()}", "score": ${"%.3f".format(r.score)}}"""
                     }
-                    CallToolResult(content = listOf(TextContent(
-                        """{"status": "found", "query": "$query", "results": $json}"""
-                    )))
+                    CallToolResult(
+                        content = listOf(
+                            TextContent(
+                                """{"status": "found", "query": "${query.jsonEscape()}", "results": $json}""",
+                            ),
+                        ),
+                    )
                 } else {
                     val slug = query.lowercase()
                         .replace(Regex("[^a-z0-9]+"), "-")
                         .trim('-')
-                    val escapedTemplate = template
-                        .replace("\\", "\\\\")
-                        .replace("\"", "\\\"")
-                        .replace("\n", "\\n")
-                    CallToolResult(content = listOf(TextContent(
-                        """{"status": "not_found", "query": "$query", "action": "add_document", "suggested_filename": "$slug.md", "template": "$escapedTemplate"}"""
-                    )))
+                    CallToolResult(
+                        content = listOf(
+                            TextContent(
+                                """{"status": "not_found", "query": "${query.jsonEscape()}", "action": "add_document", "suggested_filename": "$slug.md", "template": "${template.jsonEscape()}"}""",
+                            ),
+                        ),
+                    )
                 }
             }
         }

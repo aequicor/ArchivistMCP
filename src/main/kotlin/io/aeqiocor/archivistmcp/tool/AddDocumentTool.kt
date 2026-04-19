@@ -15,33 +15,50 @@ class AddDocumentTool(private val indexer: Indexer) : McpTool {
     override fun register(server: Server) {
         server.addTool(
             name = "add_document",
-            description = "Add a new markdown document to the docs directory and index it for semantic search.",
+            description = "Create a markdown document at the given path and index it. " +
+                "The path must be inside one of the configured module directories; " +
+                "the module is auto-detected from the path prefix.",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
-                    putJsonObject("filename") {
+                    putJsonObject("path") {
                         put("type", "string")
-                        put("description", "Filename with .md extension, e.g. 'guide.md' or 'subdir/notes.md'")
+                        put(
+                            "description",
+                            "Path to the document file. Must be within one of the configured module directories. " +
+                                "Absolute paths are recommended.",
+                        )
                     }
                     putJsonObject("content") {
                         put("type", "string")
                         put("description", "Markdown content of the document")
                     }
                 },
-                required = listOf("filename", "content"),
+                required = listOf("path", "content"),
             ),
         ) { request ->
-            val filename = request.arguments?.get("filename")?.jsonPrimitive?.contentOrNull
+            val path = request.arguments?.get("path")?.jsonPrimitive?.contentOrNull
             val content = request.arguments?.get("content")?.jsonPrimitive?.contentOrNull
-            if (filename == null || content == null) {
+            if (path.isNullOrBlank() || content == null) {
                 CallToolResult(
-                    content = listOf(TextContent("""{"error": "filename and content are required"}""")),
+                    content = listOf(TextContent("""{"error": "path and content are required"}""")),
                     isError = true,
                 )
             } else {
-                indexer.addDocument(filename, content)
-                CallToolResult(
-                    content = listOf(TextContent("""{"status": "ok", "filename": "$filename"}""")),
-                )
+                try {
+                    indexer.addDocument(path, content)
+                    CallToolResult(
+                        content = listOf(
+                            TextContent("""{"status": "ok", "path": "${path.jsonEscape()}"}"""),
+                        ),
+                    )
+                } catch (e: IllegalArgumentException) {
+                    CallToolResult(
+                        content = listOf(
+                            TextContent("""{"error": "${(e.message ?: "invalid path").jsonEscape()}"}"""),
+                        ),
+                        isError = true,
+                    )
+                }
             }
         }
     }

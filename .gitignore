@@ -28,6 +28,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+_LocalProjectAbdsoulePath.txt
 
 # ChromaDB
 data/chromadb/
@@ -36,3 +37,4 @@ data/chromadb/
 # Claude Code
 .claude/settings.local.json
 .claude/worktrees/
+/docs/

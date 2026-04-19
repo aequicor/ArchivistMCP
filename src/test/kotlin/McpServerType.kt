@@ -1,14 +1,18 @@
 import io.ktor.server.engine.EmbeddedServer
 import io.aeqiocor.archivistmcp.AppConfig
 import io.aeqiocor.archivistmcp.Indexer
+import io.aeqiocor.archivistmcp.ModuleConfig
 import io.aeqiocor.archivistmcp.runSseMcpServerUsingKtorPlugin
 import io.aeqiocor.archivistmcp.runSseMcpServerWithPlainConfiguration
 import java.io.File
 
+private val tmpDir: String = System.getProperty("java.io.tmpdir")
+
 private val testConfig = AppConfig(
-    docsDirectory = System.getProperty("java.io.tmpdir"),
+    modules = listOf(ModuleConfig(name = "test", dir = tmpDir)),
+    templatesDir = tmpDir,
     workspaceDirectory = System.getProperty("user.dir"),
-    indexPath = File(System.getProperty("java.io.tmpdir"), "test-embeddings.json").path,
+    indexPath = File(tmpDir, "test-embeddings.json").path,
 )
 private val testIndexer = Indexer(testConfig)
 

@@ -11,7 +11,12 @@
         "run",
         "--rm",
         "--interactive",
-        "--volume",  "{file:./ProjectAbdsoulePath.txt}/docs:/app/workspace/docs",
+        "--volume",
+        "{file:./_LocalProjectAbdsoulePath.txt}/docs:/app/docs",
+        "--env",
+        "modules_dirs=[/app/docs]",
+        "--env",
+        "tmps_dir=/app/docs",
         "archivist-mcp:latest"
       ]
     }

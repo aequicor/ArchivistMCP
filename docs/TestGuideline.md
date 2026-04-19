@@ -1,1 +1,0 @@
-Проект использует Kotlin Multiplatfrom

@@ -6,27 +6,26 @@ import kotlinx.coroutines.runBlocking
 fun main(vararg args: String): Unit = runBlocking {
     val command = args.firstOrNull() ?: "--stdio"
     val port = args.getOrNull(1)?.toIntOrNull() ?: throw IllegalArgumentException("Port required")
-    val docsDir = args.firstOrNull { it.startsWith("--docs-dir=") }
-        ?.substringAfter("=")
-        ?: throw IllegalArgumentException("Docs dir required")
+
+    val modulesDirsRaw = System.getenv("modules_dirs")
+        ?: throw IllegalArgumentException(
+            "Env var 'modules_dirs' is required, format: [/docs, /payments/docs]",
+        )
+    val templatesDir = System.getenv("tmps_dir")
+        ?: throw IllegalArgumentException("Env var 'tmps_dir' is required")
+
+    val modules = parseModulesDirs(modulesDirsRaw)
+    require(modules.isNotEmpty()) { "modules_dirs must contain at least one directory" }
 
     val config = AppConfig(
-        docsDirectory = docsDir,
+        modules = modules,
+        templatesDir = templatesDir,
         workspaceDirectory = System.getenv("WORKSPACE_DIR") ?: System.getProperty("user.dir") ?: ".",
-        indexPath = System.getenv("INDEX_PATH") ?: "$docsDir/index/embeddings.json",
+        indexPath = System.getenv("INDEX_PATH") ?: "${modules.first().dir}/index/embeddings.json",
     )
 
-    val templateDest = File(docsDir, "doc-template.md")
-    if (!templateDest.exists()) {
-        val templateContent = object {}.javaClass.classLoader
-            .getResourceAsStream("doc-template.md")
-            ?.bufferedReader()?.readText()
-        if (templateContent != null) {
-            templateDest.parentFile?.mkdirs()
-            templateDest.writeText(templateContent)
-            println("Copied doc-template.md to $docsDir")
-        }
-    }
+    println("Configured modules: ${modules.joinToString(", ") { "${it.name}=${it.dir}" }}")
+    println("Templates dir: $templatesDir")
 
     val indexer = Indexer(config)
     try {
@@ -41,4 +40,23 @@ fun main(vararg args: String): Unit = runBlocking {
         "--sse-server" -> runSseMcpServerWithPlainConfiguration(port, config, indexer)
         else -> error("Unknown command: $command")
     }
+}
+
+private fun parseModulesDirs(raw: String): List<ModuleConfig> {
+    return raw.trim()
+        .removePrefix("[").removeSuffix("]")
+        .split(",")
+        .map { it.trim().trim('"', '\'') }
+        .filter { it.isNotEmpty() }
+        .map { dir -> ModuleConfig(name = deriveModuleName(dir), dir = dir) }
+}
+
+private fun deriveModuleName(dir: String): String {
+    val file = File(dir).absoluteFile
+    val name = file.name
+    if (name.equals("docs", ignoreCase = true) || name.equals("documentation", ignoreCase = true)) {
+        val parent = file.parentFile?.name
+        if (!parent.isNullOrBlank()) return parent
+    }
+    return name.takeIf { it.isNotBlank() } ?: "root"
 }

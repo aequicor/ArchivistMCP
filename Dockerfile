@@ -15,4 +15,4 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=builder /app/build/libs/*-all.jar app.jar
 RUN java -cp app.jar dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel || true
-ENTRYPOINT ["java", "-jar", "app.jar", "--stdio", "8080", "--docs-dir=/app/workspace/docs"]
+ENTRYPOINT ["java", "-jar", "app.jar", "--stdio", "8080"]

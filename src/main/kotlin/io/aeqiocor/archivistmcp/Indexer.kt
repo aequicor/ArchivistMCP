@@ -10,6 +10,13 @@ import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore
 import java.io.File
 
+data class SearchResult(
+    val module: String,
+    val filename: String,
+    val path: String,
+    val score: Double,
+)
+
 class Indexer(private val config: AppConfig) {
     private val embeddingModel = AllMiniLmL6V2EmbeddingModel()
     private val embeddingStore: InMemoryEmbeddingStore<TextSegment> = loadOrCreate()
@@ -32,57 +39,113 @@ class Indexer(private val config: AppConfig) {
     }
 
     fun indexDocuments() {
-        val dir = File(config.docsDirectory)
-        if (!dir.exists() || !dir.isDirectory) return
+        config.modules.forEach { module ->
+            val dir = File(module.dir)
+            if (!dir.exists() || !dir.isDirectory) {
+                println("Skipping module '${module.name}': directory not found (${module.dir})")
+                return@forEach
+            }
 
-        val files = dir.walkTopDown()
-            .filter { it.isFile && (it.extension == "md" || it.extension == "markdown") }
-            .toList()
+            val files = dir.walkTopDown()
+                .filter { it.isFile && (it.extension == "md" || it.extension == "markdown") }
+                .toList()
 
-        println("Indexing ${files.size} documents...")
-        files.forEach { file ->
-            val doc = Document.from(
-                file.readText(),
-                Metadata.from("filename", file.relativeTo(dir).path),
-            )
-            ingestor.ingest(doc)
-            println("Indexed: ${file.name}")
+            println("Indexing ${files.size} documents for module '${module.name}'...")
+            files.forEach { file ->
+                val doc = Document.from(
+                    file.readText(),
+                    Metadata.from(
+                        mapOf(
+                            "module" to module.name,
+                            "filename" to file.relativeTo(dir).path,
+                            "path" to file.absolutePath,
+                        ),
+                    ),
+                )
+                ingestor.ingest(doc)
+                println("Indexed: [${module.name}] ${file.name}")
+            }
         }
 
-        val indexFile = File(config.indexPath)
-        indexFile.parentFile?.mkdirs()
-        embeddingStore.serializeToFile(indexFile.toPath())
-        println("Index saved to ${config.indexPath}")
+        persist()
     }
 
-    fun addDocument(filename: String, content: String) {
-        val file = File(config.docsDirectory, filename)
+    fun addDocument(path: String, content: String) {
+        val file = File(path).absoluteFile
+        val module = findModuleForPath(file)
+            ?: throw IllegalArgumentException(
+                "Path '$path' is not within any configured module directory: " +
+                    config.modules.joinToString(", ") { "${it.name}=${it.dir}" },
+            )
+
         file.parentFile?.mkdirs()
         file.writeText(content)
 
+        val moduleDir = File(module.dir).absoluteFile
+        val relative = file.relativeTo(moduleDir).path
+
         val doc = Document.from(
             content,
-            Metadata.from("filename", file.relativeTo(File(config.docsDirectory)).path),
+            Metadata.from(
+                mapOf(
+                    "module" to module.name,
+                    "filename" to relative,
+                    "path" to file.absolutePath,
+                ),
+            ),
         )
         ingestor.ingest(doc)
 
-        val indexFile = File(config.indexPath)
-        indexFile.parentFile?.mkdirs()
-        embeddingStore.serializeToFile(indexFile.toPath())
-        println("Document added and indexed: $filename")
+        persist()
+        println("Document added and indexed: [${module.name}] $relative")
     }
 
-    fun search(query: String, maxResults: Int = 5): List<Pair<String, Double>> {
+    fun search(module: String?, query: String, maxResults: Int = 5): List<SearchResult> {
         val queryEmbedding = embeddingModel.embed(query).content()
+        val candidates = if (module != null) maxResults * 4 else maxResults
         val request = EmbeddingSearchRequest.builder()
             .queryEmbedding(queryEmbedding)
-            .maxResults(maxResults)
+            .maxResults(candidates)
             .minScore(0.5)
             .build()
 
-        return embeddingStore.search(request).matches().map { match ->
-            val filename = match.embedded().metadata().getString("filename") ?: "unknown"
-            filename to match.score()
+        return embeddingStore.search(request).matches()
+            .filter { match ->
+                module == null || match.embedded().metadata().getString("module") == module
+            }
+            .take(maxResults)
+            .map { match ->
+                SearchResult(
+                    module = match.embedded().metadata().getString("module") ?: "unknown",
+                    filename = match.embedded().metadata().getString("filename") ?: "unknown",
+                    path = match.embedded().metadata().getString("path") ?: "",
+                    score = match.score(),
+                )
+            }
+    }
+
+    fun modules(): List<String> = config.modules.map { it.name }
+
+    private fun findModuleForPath(file: File): ModuleConfig? {
+        val targetCanonical = try {
+            file.canonicalPath
+        } catch (_: Exception) {
+            file.absolutePath
         }
+        return config.modules.firstOrNull { module ->
+            val moduleCanonical = try {
+                File(module.dir).canonicalPath
+            } catch (_: Exception) {
+                File(module.dir).absolutePath
+            }
+            targetCanonical == moduleCanonical ||
+                targetCanonical.startsWith(moduleCanonical + File.separator)
+        }
+    }
+
+    private fun persist() {
+        val indexFile = File(config.indexPath)
+        indexFile.parentFile?.mkdirs()
+        embeddingStore.serializeToFile(indexFile.toPath())
     }
 }
