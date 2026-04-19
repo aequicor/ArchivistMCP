@@ -1,10 +1,6 @@
 package io.aeqiocor.archivistmcp
 
-import io.aeqiocor.archivistmcp.tool.HelloWorldTool
-import io.aeqiocor.archivistmcp.tool.ListDocumentsTool
-import io.aeqiocor.archivistmcp.tool.ListWorkspaceFilesTool
 import io.aeqiocor.archivistmcp.tool.McpTool
-import io.aeqiocor.archivistmcp.tool.ReadDocumentTool
 import io.aeqiocor.archivistmcp.tool.SemanticSearchTool
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -65,11 +61,7 @@ fun configureServer(config: AppConfig, indexer: Indexer): Server {
     }
 
     val tools: List<McpTool> = listOf(
-        ListWorkspaceFilesTool(config),
-        ListDocumentsTool(config),
-        ReadDocumentTool(config),
         SemanticSearchTool(indexer),
-        HelloWorldTool(),
     )
     tools.forEach { it.register(server) }
 
