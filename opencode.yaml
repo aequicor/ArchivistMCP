@@ -1,0 +1,17 @@
+version: 1
+
+mcp_servers:
+  archivist:
+    url: http://localhost:8080/sse
+    description: "Document indexing MCP server (Docker)"
+
+# Tool examples:
+# - list_documents: List all markdown documents in /app/docs
+# - read_document: Read a specific document by filename
+# - search_documents: Search across all documents
+
+# Usage:
+# 1. Ensure Docker is running
+# 2. docker build -t archivist-mcp .
+# 3. docker run -d -p 8080:8080 -v C:/path/to/docs:/app/docs:ro archivist-mcp
+# 4. OpenCode will connect via SSE at http://localhost:8080/sse

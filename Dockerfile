@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apk add --no-cache curl
 
-COPY build/libs/*.jar app.jar
+COPY build/libs/ArchivistMCP-0.1.0-all.jar app.jar
 
 ENV JAVA_OPTS="-Xmx512m"
 
