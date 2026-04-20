@@ -17,16 +17,21 @@ fun main(vararg args: String): Unit = runBlocking {
     val baseModules = parseModulesDirs(modulesDirsRaw)
     require(baseModules.isNotEmpty()) { "modules_dirs must contain at least one directory" }
 
+    val sharedDirs = System.getenv("shared_modules_dirs")
+        ?.let { parseModulesDirs(it).map { m -> m.copy(shared = true) } }
+        .orEmpty()
+
     val hostDirs = System.getenv("HOST_MODULES_DIRS")
         ?.let { parseHostDirs(it) }
         .orEmpty()
-    val modules = baseModules.mapIndexed { i, m -> m.copy(hostDir = hostDirs.getOrNull(i)) }
+    val modules = (baseModules + sharedDirs).mapIndexed { i, m -> m.copy(hostDir = hostDirs.getOrNull(i)) }
 
     val config = AppConfig(
         modules = modules,
         templatesDir = templatesDir,
         workspaceDirectory = System.getenv("WORKSPACE_DIR") ?: System.getProperty("user.dir") ?: ".",
         indexPath = System.getenv("INDEX_PATH") ?: "${modules.first().dir}/index/embeddings.json",
+        chromaUrl = System.getenv("CHROMA_URL") ?: "http://localhost:8000",
     )
 
     println("Configured modules: ${modules.joinToString(", ") { "${it.name}=${it.dir}" }}")

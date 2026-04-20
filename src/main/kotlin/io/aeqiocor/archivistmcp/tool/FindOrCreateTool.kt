@@ -102,10 +102,7 @@ class FindOrCreateTool(
             if (content == null) {
                 return@addTool CallToolResult(
                     content = listOf(
-                        TextContent(
-                            """{"status": "not_found", "query": "${query.jsonEscape()}", """ +
-                                """"reason": "sampling unavailable or returned no content"}""",
-                        ),
+                        TextContent(buildAgentInstructions(query, docPath, template)),
                     ),
                 )
             }
@@ -129,6 +126,22 @@ class FindOrCreateTool(
             }
         }
     }
+
+    private fun buildAgentInstructions(query: String, docPath: String, template: String): String = """
+Document not found for query: "$query"
+
+Sampling is unavailable. To create this document, follow these steps:
+
+1. Use WebSearch to find relevant sources for "$query"
+2. Use WebFetch to read official documentation, GitHub READMEs, or reputable articles
+3. Fill in the template below with the research results
+4. Call add_document with:
+   - path: "$docPath"
+   - content: the filled template
+
+Template to fill:
+$template
+    """.trimIndent()
 
     private fun buildResearchPrompt(query: String, template: String, path: String): String = """
 You are a documentation researcher for a software development knowledge base.

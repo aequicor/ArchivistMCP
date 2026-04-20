@@ -4,6 +4,7 @@ data class ModuleConfig(
     val name: String,
     val dir: String,
     val hostDir: String? = null,
+    val shared: Boolean = false,
 )
 
 data class AppConfig(
@@ -11,6 +12,7 @@ data class AppConfig(
     val templatesDir: String,
     val workspaceDirectory: String,
     val indexPath: String,
+    val chromaUrl: String = "http://localhost:8000",
 ) {
     fun toHostPath(path: String): String {
         for (module in modules) {

@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.slf4j.simple)
     implementation(libs.langchain4j)
     implementation(libs.langchain4j.embeddings)
+    implementation(libs.langchain4j.chroma)
 
     testImplementation(libs.mcp.kotlin.client)
     testImplementation(libs.ktor.client.cio)

@@ -1,0 +1,26 @@
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    restart: unless-stopped
+
+  archivist:
+    build: .
+    depends_on:
+      - chroma
+    environment:
+      modules_dirs: "[/workspace/docs]"
+      tmps_dir: /workspace/templates
+      CHROMA_URL: http://chroma:8000
+      # INDEX_PATH: /workspace/docs/index/embeddings.json  # не нужен при использовании Chroma
+      # HOST_MODULES_DIRS: "[/host/path/to/docs]"
+      # WORKSPACE_DIR: /workspace
+    volumes:
+      - ./docs:/workspace/docs
+      - ./docs:/workspace/templates
+
+volumes:
+  chroma-data:

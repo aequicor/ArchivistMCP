@@ -7,7 +7,9 @@ import dev.langchain4j.data.document.splitter.DocumentSplitters
 import dev.langchain4j.data.segment.TextSegment
 import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
-import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore
+import dev.langchain4j.store.embedding.chroma.ChromaEmbeddingStore
+import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey
+import dev.langchain4j.store.embedding.filter.Filter
 import java.io.File
 
 data class SearchResult(
@@ -19,24 +21,16 @@ data class SearchResult(
 
 class Indexer(private val config: AppConfig) {
     private val embeddingModel = AllMiniLmL6V2EmbeddingModel()
-    private val embeddingStore: InMemoryEmbeddingStore<TextSegment> = loadOrCreate()
+    private val embeddingStore = ChromaEmbeddingStore.builder()
+        .baseUrl(config.chromaUrl)
+        .collectionName("archivist")
+        .build()
 
     private val ingestor = EmbeddingStoreIngestor.builder()
         .documentSplitter(DocumentSplitters.recursive(512, 64))
         .embeddingModel(embeddingModel)
         .embeddingStore(embeddingStore)
         .build()
-
-    private fun loadOrCreate(): InMemoryEmbeddingStore<TextSegment> {
-        val file = File(config.indexPath)
-        return if (file.exists()) {
-            println("Loading existing index from ${config.indexPath}")
-            InMemoryEmbeddingStore.fromFile(file.toPath())
-        } else {
-            println("Creating new index at ${config.indexPath}")
-            InMemoryEmbeddingStore()
-        }
-    }
 
     fun indexDocuments() {
         config.modules.forEach { module ->
@@ -66,8 +60,6 @@ class Indexer(private val config: AppConfig) {
                 println("Indexed: [${module.name}] ${file.name}")
             }
         }
-
-        persist()
     }
 
     fun addDocument(path: String, content: String) {
@@ -95,25 +87,23 @@ class Indexer(private val config: AppConfig) {
             ),
         )
         ingestor.ingest(doc)
-
-        persist()
         println("Document added and indexed: [${module.name}] $relative")
     }
 
     fun search(module: String?, query: String, maxResults: Int = 5): List<SearchResult> {
         val queryEmbedding = embeddingModel.embed(query).content()
-        val candidates = if (module != null) maxResults * 4 else maxResults
-        val request = EmbeddingSearchRequest.builder()
+        val requestBuilder = EmbeddingSearchRequest.builder()
             .queryEmbedding(queryEmbedding)
-            .maxResults(candidates)
+            .maxResults(maxResults)
             .minScore(0.85)
-            .build()
 
-        return embeddingStore.search(request).matches()
-            .filter { match ->
-                module == null || match.embedded().metadata().getString("module") == module
-            }
-            .take(maxResults)
+        if (module != null) {
+            val sharedModules = config.modules.filter { it.shared }.map { it.name }
+            val modulesToSearch = (listOf(module) + sharedModules).distinct()
+            requestBuilder.filter(metadataKey("module").isIn(modulesToSearch))
+        }
+
+        return embeddingStore.search(requestBuilder.build()).matches()
             .map { match ->
                 SearchResult(
                     module = match.embedded().metadata().getString("module") ?: "unknown",
@@ -122,6 +112,18 @@ class Indexer(private val config: AppConfig) {
                     score = match.score(),
                 )
             }
+    }
+
+    fun getDocument(nameOrPath: String): File? {
+        if (nameOrPath.startsWith("/")) {
+            val file = File(nameOrPath)
+            if (file.exists() && config.modules.any { nameOrPath.startsWith(it.dir) }) return file
+            return null
+        }
+        return config.modules
+            .asSequence()
+            .flatMap { File(it.dir).walkTopDown() }
+            .firstOrNull { it.isFile && (it.name == nameOrPath || it.nameWithoutExtension == nameOrPath) }
     }
 
     fun modules(): List<String> = config.modules.map { it.name }
@@ -141,11 +143,5 @@ class Indexer(private val config: AppConfig) {
             targetCanonical == moduleCanonical ||
                 targetCanonical.startsWith(moduleCanonical + File.separator)
         }
-    }
-
-    private fun persist() {
-        val indexFile = File(config.indexPath)
-        indexFile.parentFile?.mkdirs()
-        embeddingStore.serializeToFile(indexFile.toPath())
     }
 }

@@ -16,6 +16,7 @@ mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-serv
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 langchain4j = { group = "dev.langchain4j", name = "langchain4j", version.ref = "langchain4j" }
 langchain4j-embeddings = { group = "dev.langchain4j", name = "langchain4j-embeddings-all-minilm-l6-v2", version.ref = "langchain4j" }
+langchain4j-chroma = { group = "dev.langchain4j", name = "langchain4j-chroma", version.ref = "langchain4j" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
