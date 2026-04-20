@@ -24,8 +24,11 @@ abstract class SseServerIntegrationTestBase {
         assertNull(listToolsResult.meta)
 
         val tools = listToolsResult.tools
-        assertEquals(actual = tools.size, expected = 3)
-        assertEquals(expected = listOf("semantic_search", "add_document", "smart_search"), actual = tools.map { it.name })
+        assertEquals(actual = tools.size, expected = 4)
+        assertEquals(
+            expected = listOf("semantic_search", "add_document", "smart_search", "find_or_create"),
+            actual = tools.map { it.name },
+        )
     }
 
     @Test
