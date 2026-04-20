@@ -1,6 +1,7 @@
 package io.aeqiocor.archivistmcp
 
 import io.aeqiocor.archivistmcp.tool.AddDocumentTool
+import io.aeqiocor.archivistmcp.tool.FindOrCreateTool
 import io.aeqiocor.archivistmcp.tool.McpTool
 import io.aeqiocor.archivistmcp.tool.SemanticSearchTool
 import io.aeqiocor.archivistmcp.tool.SmartSearchTool
@@ -66,6 +67,7 @@ fun configureServer(config: AppConfig, indexer: Indexer): Server {
         SemanticSearchTool(indexer),
         AddDocumentTool(indexer),
         SmartSearchTool(indexer, config.templatesDir),
+        FindOrCreateTool(indexer, config),
     )
     tools.forEach { it.register(server) }
 
