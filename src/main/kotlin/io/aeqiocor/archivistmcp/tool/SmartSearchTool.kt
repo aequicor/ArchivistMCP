@@ -1,5 +1,6 @@
 package io.aeqiocor.archivistmcp.tool
 
+import io.aeqiocor.archivistmcp.AppConfig
 import io.aeqiocor.archivistmcp.Indexer
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -14,10 +15,10 @@ import java.io.File
 
 class SmartSearchTool(
     private val indexer: Indexer,
-    private val templatesDir: String,
+    private val config: AppConfig,
 ) : McpTool {
     private val template: String by lazy {
-        val file = File(templatesDir, "doc-template.md")
+        val file = File(config.templatesDir, "doc-template.md")
         if (file.exists()) file.readText() else ""
     }
 
@@ -46,7 +47,8 @@ class SmartSearchTool(
                 val results = indexer.search(module = null, query = query)
                 if (results.isNotEmpty()) {
                     val json = results.joinToString(", ", "[", "]") { r ->
-                        """{"module": "${r.module.jsonEscape()}", "filename": "${r.filename.jsonEscape()}", "path": "${r.path.jsonEscape()}", "score": ${"%.3f".format(r.score)}}"""
+                        val hostPath = config.toHostPath(r.path)
+                        """{"module": "${r.module.jsonEscape()}", "filename": "${r.filename.jsonEscape()}", "path": "${hostPath.jsonEscape()}", "score": ${"%.3f".format(r.score)}}"""
                     }
                     CallToolResult(
                         content = listOf(

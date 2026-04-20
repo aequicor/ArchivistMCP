@@ -1,5 +1,6 @@
 package io.aeqiocor.archivistmcp.tool
 
+import io.aeqiocor.archivistmcp.AppConfig
 import io.aeqiocor.archivistmcp.Indexer
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -11,7 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-class AddDocumentTool(private val indexer: Indexer) : McpTool {
+class AddDocumentTool(private val indexer: Indexer, private val config: AppConfig) : McpTool {
     override fun register(server: Server) {
         server.addTool(
             name = "add_document",
@@ -46,9 +47,10 @@ class AddDocumentTool(private val indexer: Indexer) : McpTool {
             } else {
                 try {
                     indexer.addDocument(path, content)
+                    val hostPath = config.toHostPath(path)
                     CallToolResult(
                         content = listOf(
-                            TextContent("""{"status": "ok", "path": "${path.jsonEscape()}"}"""),
+                            TextContent("""{"status": "ok", "path": "${hostPath.jsonEscape()}"}"""),
                         ),
                     )
                 } catch (e: IllegalArgumentException) {

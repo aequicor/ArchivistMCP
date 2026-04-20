@@ -14,8 +14,13 @@ fun main(vararg args: String): Unit = runBlocking {
     val templatesDir = System.getenv("tmps_dir")
         ?: throw IllegalArgumentException("Env var 'tmps_dir' is required")
 
-    val modules = parseModulesDirs(modulesDirsRaw)
-    require(modules.isNotEmpty()) { "modules_dirs must contain at least one directory" }
+    val baseModules = parseModulesDirs(modulesDirsRaw)
+    require(baseModules.isNotEmpty()) { "modules_dirs must contain at least one directory" }
+
+    val hostDirs = System.getenv("HOST_MODULES_DIRS")
+        ?.let { parseHostDirs(it) }
+        .orEmpty()
+    val modules = baseModules.mapIndexed { i, m -> m.copy(hostDir = hostDirs.getOrNull(i)) }
 
     val config = AppConfig(
         modules = modules,
@@ -41,6 +46,12 @@ fun main(vararg args: String): Unit = runBlocking {
         else -> error("Unknown command: $command")
     }
 }
+
+private fun parseHostDirs(raw: String): List<String> =
+    raw.trim().removePrefix("[").removeSuffix("]")
+        .split(",")
+        .map { it.trim().trim('"', '\'') }
+        .filter { it.isNotEmpty() }
 
 private fun parseModulesDirs(raw: String): List<ModuleConfig> {
     return raw.trim()

@@ -1,5 +1,6 @@
 package io.aeqiocor.archivistmcp.tool
 
+import io.aeqiocor.archivistmcp.AppConfig
 import io.aeqiocor.archivistmcp.Indexer
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
@@ -11,7 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-class SemanticSearchTool(private val indexer: Indexer) : McpTool {
+class SemanticSearchTool(private val indexer: Indexer, private val config: AppConfig) : McpTool {
     override fun register(server: Server) {
         val availableModules = indexer.modules().joinToString(", ")
         server.addTool(
@@ -43,7 +44,8 @@ class SemanticSearchTool(private val indexer: Indexer) : McpTool {
             } else {
                 val results = indexer.search(module, query)
                 val json = results.joinToString(", ", "[", "]") { r ->
-                    """{"module": "${r.module.jsonEscape()}", "filename": "${r.filename.jsonEscape()}", "path": "${r.path.jsonEscape()}", "score": ${"%.3f".format(r.score)}}"""
+                    val hostPath = config.toHostPath(r.path)
+                    """{"module": "${r.module.jsonEscape()}", "filename": "${r.filename.jsonEscape()}", "path": "${hostPath.jsonEscape()}", "score": ${"%.3f".format(r.score)}}"""
                 }
                 CallToolResult(
                     content = listOf(

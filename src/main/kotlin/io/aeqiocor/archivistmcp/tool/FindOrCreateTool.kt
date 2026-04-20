@@ -62,7 +62,7 @@ class FindOrCreateTool(
             val results = indexer.search(module = module, query = query)
             if (results.isNotEmpty()) {
                 val paths = results.joinToString(", ", "[", "]") { r ->
-                    """"${r.path.jsonEscape()}""""
+                    """"${config.toHostPath(r.path).jsonEscape()}""""
                 }
                 return@addTool CallToolResult(
                     content = listOf(TextContent("""{"status": "found", "paths": $paths}""")),
@@ -113,8 +113,9 @@ class FindOrCreateTool(
             // Step 3: index the document
             return@addTool try {
                 indexer.addDocument(docPath, content)
+                val hostPath = config.toHostPath(docPath)
                 CallToolResult(
-                    content = listOf(TextContent("""{"status": "created", "path": "${docPath.jsonEscape()}"}""")),
+                    content = listOf(TextContent("""{"status": "created", "path": "${hostPath.jsonEscape()}"}""")),
                 )
             } catch (e: IllegalArgumentException) {
                 CallToolResult(

@@ -16,6 +16,8 @@
         "--env",
         "modules_dirs=[/app/docs]",
         "--env",
+        "HOST_MODULES_DIRS=[{file:./_LocalProjectAbdsoulePath.txt}/docs]",
+        "--env",
         "tmps_dir=/app/docs",
         "archivist-mcp:latest"
       ]

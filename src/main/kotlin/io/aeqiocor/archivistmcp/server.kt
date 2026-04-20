@@ -64,9 +64,9 @@ fun configureServer(config: AppConfig, indexer: Indexer): Server {
     }
 
     val tools: List<McpTool> = listOf(
-        SemanticSearchTool(indexer),
-        AddDocumentTool(indexer),
-        SmartSearchTool(indexer, config.templatesDir),
+        SemanticSearchTool(indexer, config),
+        AddDocumentTool(indexer, config),
+        SmartSearchTool(indexer, config),
         FindOrCreateTool(indexer, config),
     )
     tools.forEach { it.register(server) }
