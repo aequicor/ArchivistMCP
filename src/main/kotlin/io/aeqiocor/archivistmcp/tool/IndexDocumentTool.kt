@@ -12,10 +12,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-class AddDocumentTool(private val indexer: Indexer, private val config: AppConfig) : McpTool {
+class IndexDocumentTool(private val indexer: Indexer, private val config: AppConfig) : McpTool {
     override fun register(server: Server) {
         server.addTool(
-            name = "add_document",
+            name = "index_document",
             description = "Create a markdown document at the given path and index it. " +
                 "The path must be inside one of the configured module directories; " +
                 "the module is auto-detected from the path prefix.",
