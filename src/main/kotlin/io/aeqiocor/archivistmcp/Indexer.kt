@@ -106,7 +106,7 @@ class Indexer(private val config: AppConfig) {
         val request = EmbeddingSearchRequest.builder()
             .queryEmbedding(queryEmbedding)
             .maxResults(candidates)
-            .minScore(0.5)
+            .minScore(0.85)
             .build()
 
         return embeddingStore.search(request).matches()
