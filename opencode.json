@@ -9,16 +9,14 @@
       "command": [
         "docker",
         "run",
-        "--rm",
         "--interactive",
-        "--volume",
-        "{file:./_LocalProjectAbdsoulePath.txt}/docs:/app/docs",
-        "--env",
-        "modules_dirs=[/app/docs]",
-        "--env",
-        "HOST_MODULES_DIRS=[{file:./_LocalProjectAbdsoulePath.txt}/docs]",
-        "--env",
-        "tmps_dir=/app/docs",
+        "--rm",
+        "--volume",        "{file:./_LocalProjectAbdsoulePath.txt}/docs:/app/docs",
+        "--env",        "modules_dirs=[/app/docs]",
+        "--env",        "HOST_MODULES_DIRS=[{file:./_LocalProjectAbdsoulePath.txt}/docs]",
+        "--env",        "tmps_dir=/app/docs/tmps",
+        "--env", "CHROMA_URL=http://host.docker.internal:8000",
+        "--add-host", "host.docker.internal:host-gateway",
         "archivist-mcp:latest"
       ]
     }

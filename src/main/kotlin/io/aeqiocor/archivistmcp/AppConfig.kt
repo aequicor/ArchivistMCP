@@ -11,7 +11,6 @@ data class AppConfig(
     val modules: List<ModuleConfig>,
     val templatesDir: String,
     val workspaceDirectory: String,
-    val indexPath: String,
     val chromaUrl: String = "http://localhost:8000",
 ) {
     fun toHostPath(path: String): String {
