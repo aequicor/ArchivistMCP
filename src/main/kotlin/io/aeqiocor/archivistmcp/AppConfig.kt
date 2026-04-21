@@ -13,6 +13,20 @@ data class AppConfig(
     val workspaceDirectory: String,
     val chromaUrl: String = "http://localhost:8000",
 ) {
+    fun toContainerPath(path: String): String {
+        for (module in modules) {
+            val hostDir = module.hostDir ?: continue
+            val prefix = hostDir.trimEnd('/', '\\') + "/"
+            when {
+                path.startsWith(prefix) ->
+                    return module.dir.trimEnd('/') + "/" + path.removePrefix(prefix)
+                path.trimEnd('/', '\\') == hostDir.trimEnd('/', '\\') ->
+                    return module.dir.trimEnd('/')
+            }
+        }
+        return path
+    }
+
     fun toHostPath(path: String): String {
         for (module in modules) {
             val hostDir = module.hostDir ?: continue

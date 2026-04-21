@@ -40,6 +40,7 @@ fun main(vararg args: String): Unit = runBlocking {
     try {
         indexer.indexDocuments()
     } catch (e: Throwable) {
+        System.err.println("ERROR: Failed to index documents at startup: ${e.message}")
         e.printStackTrace()
     }
 

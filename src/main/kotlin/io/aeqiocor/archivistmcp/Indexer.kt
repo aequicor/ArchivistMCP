@@ -85,7 +85,7 @@ class Indexer(private val config: AppConfig) {
     }
 
     fun addDocument(path: String, content: String, type: String? = null) {
-        val rawFile = File(path).absoluteFile
+        val rawFile = File(config.toContainerPath(path)).absoluteFile
         val module = findModuleForPath(rawFile)
             ?: throw IllegalArgumentException(
                 "Path '$path' is not within any configured module directory: " +
@@ -129,12 +129,18 @@ class Indexer(private val config: AppConfig) {
         val requestBuilder = EmbeddingSearchRequest.builder()
             .queryEmbedding(queryEmbedding)
             .maxResults(maxResults)
-            .minScore(0.85)
+            .minScore(0.5)
 
         val moduleFilter: Filter? = if (module != null) {
+            val knownModuleNames = config.modules.map { it.name }
             val sharedModules = config.modules.filter { it.shared }.map { it.name }
             val modulesToSearch = (listOf(module) + sharedModules).distinct()
-            metadataKey("module").isIn(modulesToSearch)
+            // If the requested module doesn't match any configured module, search across all modules
+            if (module in knownModuleNames || sharedModules.isNotEmpty()) {
+                metadataKey("module").isIn(modulesToSearch)
+            } else {
+                null
+            }
         } else null
 
         val typeFilter: Filter? = if (type != null) metadataKey("type").isEqualTo(type) else null
