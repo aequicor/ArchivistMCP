@@ -1,8 +1,10 @@
 package io.aeqiocor.archivistmcp
 
+import io.aeqiocor.archivistmcp.tool.GetDocumentTool
 import io.aeqiocor.archivistmcp.tool.IndexDocumentTool
 import io.aeqiocor.archivistmcp.tool.McpTool
 import io.aeqiocor.archivistmcp.tool.SemanticSearchTool
+import kotlinx.coroutines.launch
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
@@ -64,6 +66,7 @@ fun configureServer(config: AppConfig, indexer: Indexer): Server {
     val tools: List<McpTool> = listOf(
         SemanticSearchTool(indexer, config),
         IndexDocumentTool(indexer, config),
+        GetDocumentTool(indexer, config),
     )
     tools.forEach { it.register(server) }
 
@@ -99,9 +102,20 @@ fun runSseMcpServerWithPlainConfiguration(
         install(SSE)
         routing {
             sse("/sse") {
+                val scope = this
                 val transport = SseServerTransport("/message", this)
                 val serverSession = server.createSession(transport)
                 serverSessions[transport.sessionId] = serverSession
+
+                serverSession.onInitialized {
+                    if (serverSession.clientCapabilities?.sampling == null) {
+                        server.removeTool("get_document")
+                        scope.launch {
+                            runCatching { serverSession.notification(ToolListChangedNotification()) }
+                        }
+                        GetDocumentTool.printSamplingUnavailableBanner()
+                    }
+                }
 
                 serverSession.onClose {
                     println("Server session closed for: ${transport.sessionId}")
@@ -211,7 +225,17 @@ fun runMcpServerUsingStdio(config: AppConfig, indexer: Indexer) {
     )
 
     runBlocking {
-        server.createSession(transport)
+        val scope = this
+        val serverSession = server.createSession(transport)
+        serverSession.onInitialized {
+            if (serverSession.clientCapabilities?.sampling == null) {
+                server.removeTool("get_document")
+                scope.launch {
+                    runCatching { serverSession.notification(ToolListChangedNotification()) }
+                }
+                GetDocumentTool.printSamplingUnavailableBanner()
+            }
+        }
         awaitCancellation()
     }
 }

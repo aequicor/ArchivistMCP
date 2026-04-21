@@ -30,7 +30,6 @@ fun main(vararg args: String): Unit = runBlocking {
         modules = modules,
         templatesDir = templatesDir,
         workspaceDirectory = System.getenv("WORKSPACE_DIR") ?: System.getProperty("user.dir") ?: ".",
-        indexPath = System.getenv("INDEX_PATH") ?: "${modules.first().dir}/index/embeddings.json",
         chromaUrl = System.getenv("CHROMA_URL") ?: "http://localhost:8000",
     )
 

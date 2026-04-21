@@ -5,6 +5,7 @@ mcp-kotlin = "0.11.1"
 slf4j = "2.0.17"
 shadow = "9.4.1"
 langchain4j = "0.36.0"
+mockk = "1.13.17"
 
 [libraries]
 ktor-bom = { group = "io.ktor", name = "ktor-bom", version.ref = "ktor" }
@@ -13,6 +14,7 @@ ktor-server-cio = { group = "io.ktor", name = "ktor-server-cio" }
 ktor-server-cors = { group = "io.ktor", name = "ktor-server-cors" }
 mcp-kotlin-client = { group = "io.modelcontextprotocol", name = "kotlin-sdk-client", version.ref = "mcp-kotlin" }
 mcp-kotlin-server = { group = "io.modelcontextprotocol", name = "kotlin-sdk-server", version.ref = "mcp-kotlin" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 langchain4j = { group = "dev.langchain4j", name = "langchain4j", version.ref = "langchain4j" }
 langchain4j-embeddings = { group = "dev.langchain4j", name = "langchain4j-embeddings-all-minilm-l6-v2", version.ref = "langchain4j" }

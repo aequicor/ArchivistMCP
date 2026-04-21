@@ -22,8 +22,7 @@ dependencies {
     implementation(libs.langchain4j.embeddings)
     implementation(libs.langchain4j.chroma)
 
-    testImplementation(libs.mcp.kotlin.client)
-    testImplementation(libs.ktor.client.cio)
+    testImplementation(libs.mockk)
     testImplementation(kotlin("test"))
 }
 

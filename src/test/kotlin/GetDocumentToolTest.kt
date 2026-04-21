@@ -75,9 +75,22 @@ class GetDocumentToolTest {
     }
 
     @Test
-    fun `returns not_found when mcp sampling fails`() = runBlocking {
+    fun `returns unavailable with SKILL hint when sampling is not supported`() = runBlocking {
+        every { indexer.getDocument("missing-doc") } returns null
+        coEvery { connection.createMessage(any(), any()) } throws RuntimeException("Client does not support sampling (required for sampling/createMessage)")
+
+        val result = tool.handle(connection, request(mapOf("name_or_path" to "missing-doc")))
+
+        assertFalse(result.isError == true)
+        val text = result.textContent()
+        assertContains(text, """"status":"unavailable"""")
+        assertContains(text, "LOOKUP")
+    }
+
+    @Test
+    fun `returns not_found when mcp sampling fails with generic error`() = runBlocking {
         every { indexer.getDocument("unavailable") } returns null
-        coEvery { connection.createMessage(any(), any()) } throws RuntimeException("Client does not support sampling")
+        coEvery { connection.createMessage(any(), any()) } throws RuntimeException("Network timeout")
 
         val result = tool.handle(connection, request(mapOf("name_or_path" to "unavailable")))
 
